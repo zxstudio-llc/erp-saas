@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Sync;
 
+use App\Http\Controllers\Controller;
 use App\Actions\Sync\ValidateBatchAction;
 use App\Actions\Sync\PersistBatchAction;
 use App\Actions\Sync\DispatchSriJobsAction;

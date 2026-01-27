@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Billing;
 
+use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\InvoiceSequenceBlock;
 use App\Actions\Billing\AssignSequenceBlockAction;

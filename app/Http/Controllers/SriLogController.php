@@ -3,63 +3,82 @@
 namespace App\Http\Controllers;
 
 use App\Models\SriLog;
+use App\Models\Invoice;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class SriLogController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request): Response
     {
-        //
+        $query = SriLog::with('invoice.customer');
+
+        if ($action = $request->input('action')) {
+            $query->where('action', $action);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($invoiceId = $request->input('invoice_id')) {
+            $query->where('invoice_id', $invoiceId);
+        }
+
+        $logs = $query->latest()
+            ->paginate(50)
+            ->withQueryString();
+
+        return Inertia::render('sri-logs/index', [
+            'logs' => $logs,
+            'filters' => $request->only(['action', 'status', 'invoice_id']),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function show(SriLog $sriLog): Response
     {
-        //
+        $sriLog->load('invoice.customer');
+
+        return Inertia::render('sri-logs/show', [
+            'log' => $sriLog
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function stats()
     {
-        //
+        $stats = [
+            'total_logs' => SriLog::count(),
+            'by_action' => SriLog::select('action', \DB::raw('count(*) as count'))
+                ->groupBy('action')
+                ->get(),
+            'by_status' => SriLog::select('status', \DB::raw('count(*) as count'))
+                ->groupBy('status')
+                ->get(),
+            'recent_errors' => SriLog::where('status', 'error')
+                ->with('invoice')
+                ->latest()
+                ->take(10)
+                ->get(),
+            'success_rate' => [
+                'validate' => $this->getSuccessRate('validate'),
+                'send' => $this->getSuccessRate('send'),
+                'authorize' => $this->getSuccessRate('authorize'),
+            ]
+        ];
+
+        return response()->json($stats);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(SriLog $sriLog)
+    private function getSuccessRate(string $action): float
     {
-        //
-    }
+        $total = SriLog::where('action', $action)->count();
+        if ($total === 0) return 0;
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(SriLog $sriLog)
-    {
-        //
-    }
+        $success = SriLog::where('action', $action)
+            ->whereIn('status', ['authorized', 'sent', 'validated'])
+            ->count();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, SriLog $sriLog)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(SriLog $sriLog)
-    {
-        //
+        return round(($success / $total) * 100, 2);
     }
 }
