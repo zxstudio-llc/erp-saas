@@ -17,9 +17,7 @@ return [
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
     'central_domains' => [
-        'erpsaas.test',
-        '127.0.0.1',
-        'localhost',
+         env('APP_DOMAIN', 'erpsaas.test'),
     ],
 
     /**
@@ -185,9 +183,9 @@ return [
      * Parameters used by the tenants:migrate command.
      */
     'migration_parameters' => [
-        '--force' => true, // This needs to be true to run migrations in production.
-        '--path' => [database_path('migrations/tenant')],
-        '--realpath' => true,
+        // '--force' => true, // This needs to be true to run migrations in production.
+        // '--path' => [database_path('migrations/tenant')],
+        // '--realpath' => true,
     ],
 
     /**

@@ -17,8 +17,12 @@ class EnsureTenantIsActive
     {
         $tenant = tenancy()->tenant;
 
+        if (!$tenant) {
+            abort(404, 'Empresa no encontrada');
+        }
+
         if (!$tenant || $tenant->status !== 'active') {
-            return inertia('Errors/TenantSuspended', [
+            return inertia('errors/TenantSuspended', [
                 'message' => 'Tu cuenta ha sido suspendida. Contacta a soporte.'
             ])->toResponse($request)->setStatusCode(403);
         }

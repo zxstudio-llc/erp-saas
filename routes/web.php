@@ -6,12 +6,10 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\WelcomeController;
 
-Route::get('/', function () {
-    return Inertia::render('welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-    ]);
-})->name('home');
+Route::get('/', WelcomeController::class)->name('home');
+
 
 Route::prefix('onboarding')->name('onboarding.')->group(function () {
     Route::get('/plans', [OnboardingController::class, 'selectPlan'])->name('plans');

@@ -19,7 +19,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'slug',
         'database',
         'status',
+        'data',
     ];
+
+    public static function getCustomColumns(): array
+    {
+        return [
+            'id',
+            'slug',
+            'database',
+            'status',
+        ];
+    }
 
     protected $casts = [
         'created_at' => 'datetime',
