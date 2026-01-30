@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Actions\SaaS\{CreateTenantAction, CreateSubscriptionAction, ProvisionTenantDatabaseAction};
 use App\Models\{Plan, User, Tenant};
 use Illuminate\Support\Facades\{Hash, Auth, DB};
+use Illuminate\Support\Str;
+use App\Jobs\ProvisionTenantJob;
 use Inertia\Inertia;
 
 class OnboardingController extends Controller
@@ -24,9 +26,11 @@ class OnboardingController extends Controller
     {
         $planId = $request->input('plan_id');
         $plan = Plan::findOrFail($planId);
+        $plans = Plan::where('active', true)->get();
         
         return Inertia::render('onboarding/register', [
-            'plan' => $plan
+            'plan' => $plan,
+            'plans' => $plans
         ]);
     }
 
@@ -49,10 +53,13 @@ class OnboardingController extends Controller
         try {
             DB::beginTransaction();
             
+            // Creamos contraseña temporal
+            $temporaryPassword = Str::random(32);
+
             $user = User::create([
                 'name' => $validated['first_name'] . ' ' . $validated['last_name'],
                 'email' => $validated['email'],
-                'password' => Hash::make(Str::random(32)), // temporal
+                'password' => Hash::make($temporaryPassword),
             ]);
             
             $tenant = $createTenant->execute(['slug' => $validated['slug']], $user);
@@ -60,7 +67,11 @@ class OnboardingController extends Controller
             $plan = Plan::findOrFail($validated['plan_id']);
             $createSubscription->execute($tenant, $plan);
             
-            ProvisionTenantJob::dispatch($tenant);
+            ProvisionTenantJob::dispatch($tenant, [
+                'name' => $user->name,
+                'email' => $user->email,
+                'password' => $user->password,
+            ]);
             
             DB::commit();
             
