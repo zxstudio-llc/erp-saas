@@ -46,22 +46,16 @@ class OnboardingController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'organization_size' => 'nullable|string',
-            'phone' => 'nullable|string',
         ]);
     
         try {
-            DB::beginTransaction();
             
-            // Creamos contraseña temporal
-            $temporaryPassword = Str::random(32);
-
             $user = User::create([
                 'name' => $validated['first_name'] . ' ' . $validated['last_name'],
                 'email' => $validated['email'],
-                'password' => Hash::make($temporaryPassword),
+                'password' => Hash::make(Str::random(32)),
             ]);
-            
+    
             $tenant = $createTenant->execute(['slug' => $validated['slug']], $user);
             
             $plan = Plan::findOrFail($validated['plan_id']);
@@ -72,16 +66,17 @@ class OnboardingController extends Controller
                 'email' => $user->email,
                 'password' => $user->password,
             ]);
+
+            $token = $user->createToken('onboarding')->plainTextToken;
             
-            DB::commit();
-            
-            Auth::login($user);
-            
-            return redirect("/{$tenant->slug}/register");
-            
+            return redirect()->route('register.via-token', [
+                'token' => $token,
+                'tenant' => $tenant->slug,
+            ]);
+    
         } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withErrors(['error' => $e->getMessage()]);
+            \Log::error("Error en Onboarding: " . $e->getMessage());
+            return back()->withInput()->withErrors(['company_name' => 'Error: ' . $e->getMessage()]);
         }
     }
 }

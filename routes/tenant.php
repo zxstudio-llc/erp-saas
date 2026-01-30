@@ -31,6 +31,7 @@ use App\Http\Middleware\EnsureTenantIsActive;
 Route::prefix('{tenant}')
 ->middleware([
     'web',
+    'tenant',
     InitializeTenancyByPath::class,
 ])
 ->group(function () {
@@ -38,7 +39,7 @@ Route::prefix('{tenant}')
         Route::post('/login', [AuthController::class, 'login']);
         Route::get('/register', [\App\Http\Controllers\Tenant\RegisterController::class, 'show'])->name('tenant.register');
         Route::post('/register', [\App\Http\Controllers\Tenant\RegisterController::class, 'store']);
-        
+
         Route::middleware(['tenant.auth', 'tenant.active', 'tenant.provisions'])->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('tenant.dashboard');
         

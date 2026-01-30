@@ -3,24 +3,20 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\{Hash, Auth};
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\{Hash, Auth};
+use Inertia\Inertia;
+use Stancl\Tenancy\Facades\Tenancy;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class RegisterController extends Controller
 {
-    /**
-     * Handle the incoming request.
-     */
-    public function show()
-    {
-        if (!Auth::check()) {
-            return redirect('/login');
-        }
+    public function show(Request $request)
+{
+    abort_if(!Auth::check(), 403);
 
-        return Inertia::render('tenant/register', [
-            'tenant' => tenant('slug'),
-        ]);
-    }
+    return Inertia::render('tenant/register');
+}
 
     public function store(Request $request)
     {
@@ -29,8 +25,14 @@ class RegisterController extends Controller
         ]);
 
         $user = Auth::user();
-        $user->update(['password' => Hash::make($validated['password'])]);
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
 
-        return redirect()->route('tenant.dashboard', ['tenant' => tenant('slug')]);
+        $user->tokens()->delete();
+
+        return redirect()->route('tenant.dashboard', [
+            'tenant' => tenant('slug'),
+        ]);
     }
 }

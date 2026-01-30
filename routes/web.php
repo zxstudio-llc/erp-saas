@@ -4,12 +4,15 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\RegisterTokenController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WelcomeController;
 
 Route::get('/', WelcomeController::class)->name('home');
-
+Route::get('/register-via-token', [RegisterTokenController::class, 'viaToken'])
+    ->middleware(['web'])
+    ->name('register.via-token');
 
 Route::prefix('onboarding')->name('onboarding.')->group(function () {
     Route::get('/plans', [OnboardingController::class, 'selectPlan'])->name('plans');
@@ -17,7 +20,7 @@ Route::prefix('onboarding')->name('onboarding.')->group(function () {
     Route::post('/provision', [OnboardingController::class, 'provision'])->name('provision');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'no.tenant'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
