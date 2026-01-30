@@ -2,29 +2,28 @@
 
 namespace App\Actions\SaaS;
 
-use App\Models\Tenant;
-use App\Models\Subscription;
-use App\Models\Plan;
-use Illuminate\Support\Str;
+use App\Models\{Tenant, User};
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Artisan;
 
 class CreateTenantAction
 {
-    public function execute(array $data): Tenant
+    public function execute(array $data, User $user): Tenant
     {
-        $tenant = Tenant::create([
-            'id'   => $data['slug'],
-            'slug' => $data['slug'],
-            'database' => 'erp' . $data['slug'],
-            'status'   => 'active',
-        ]);
-        $centralDomain = config('tenancy.central_domains')[0] ?? 'erpsaas.test';
+        return DB::transaction(function () use ($data, $user) {
+            $tenant = Tenant::create([
+                'id' => $data['slug'],
+                'slug' => $data['slug'],
+                'database' => 'erp' . $data['slug'],
+                'status' => 'active',
+            ]);
 
-        $tenant->domains()->create([
-            'domain' => $data['slug'],
-        ]);
+            // $tenant->domains()->create([
+            //     'domain' => config('tenancy.central_domains')[0],
+            // ]);
 
-        return $tenant;
+            $tenant->users()->attach($user->id);
+
+            return $tenant;
+        });
     }
 }

@@ -33,57 +33,44 @@ class OnboardingController extends Controller
     public function provision(
         Request $request,
         CreateTenantAction $createTenant,
-        CreateSubscriptionAction $createSubscription,
-        ProvisionTenantDatabaseAction $provisionDb
+        CreateSubscriptionAction $createSubscription
     ) {
         $validated = $request->validate([
             'company_name' => 'required|string|max:255',
             'slug' => 'required|string|max:50|unique:tenants,slug|alpha_dash',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
             'plan_id' => 'required|exists:plans,id',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'organization_size' => 'nullable|string',
+            'phone' => 'nullable|string',
         ]);
-
+    
         try {
             DB::beginTransaction();
             
-            $tenant = $createTenant->execute([
-                'slug' => $validated['slug']
+            $user = User::create([
+                'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+                'email' => $validated['email'],
+                'password' => Hash::make(Str::random(32)), // temporal
             ]);
+            
+            $tenant = $createTenant->execute(['slug' => $validated['slug']], $user);
             
             $plan = Plan::findOrFail($validated['plan_id']);
-            $subscription = $createSubscription->execute($tenant, $plan);
+            $createSubscription->execute($tenant, $plan);
             
-            $user = User::create([
-                'name' => $validated['company_name'],
-                'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
-            ]);
-            
-            $provisionDb->execute($tenant);
-            
-            $tenant->run(function () use ($user, $validated) {
-                $tenantUser = \App\Models\User::create([
-                    'name' => $validated['company_name'],
-                    'email' => $validated['email'],
-                    'password' => Hash::make($validated['password']),
-                ]);
-                
-                if (class_exists(\Spatie\Permission\Models\Role::class)) {
-                    $tenantUser->assignRole('admin');
-                }
-            });
+            ProvisionTenantJob::dispatch($tenant);
             
             DB::commit();
             
             Auth::login($user);
             
-            return redirect("/{$tenant->slug}/dashboard")->with('success', '¡Cuenta creada exitosamente! Bienvenido.');
+            return redirect("/{$tenant->slug}/register");
             
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            return back()->with('error', 'Error al crear la cuenta: ' . $e->getMessage());
+            return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 }

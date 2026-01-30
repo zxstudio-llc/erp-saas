@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
-use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+// use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use App\Http\Controllers\Billing\InvoiceController;
 use App\Http\Controllers\Sync\SyncController;
 use App\Http\Controllers\CompanyController;
@@ -13,6 +13,8 @@ use App\Http\Controllers\Billing\EstablishmentController;
 use App\Http\Controllers\Billing\EmissionPointController;
 use App\Http\Controllers\Billing\InvoiceSequenceBlockController;
 use App\Http\Controllers\SriLogController;
+use App\Http\Controllers\Tenant\DashboardController;
+use App\Http\Controllers\Tenant\AuthController;
 use App\Http\Middleware\EnsureTenantIsActive;
 
 /*
@@ -26,33 +28,19 @@ use App\Http\Middleware\EnsureTenantIsActive;
 | Feel free to customize them however you want. Good luck!
 |
 */
-Route::group([
-    'prefix' => '/{tenant}',
-    'middleware' => [
-        'web',
-        'tenant.active',
-        'auth',
-        'tenant.provisions',
-        InitializeTenancyByPath::class,
-        PreventAccessFromCentralDomains::class,
-    ],
-], function () {
-        // Route::get('/', function () {
-        //     return 'This is your multi-tenant application. The id of the current tenant is ' . tenant('id');
-        // });
-        Route::get('/test-debug', function ($tenant) {
-            $tenantModel = \App\Models\Tenant::find($tenant);
-            $domainModel = \Stancl\Tenancy\Database\Models\Domain::where('domain', $tenant)->first();
-            
-            return response()->json([
-                'parametro_recibido' => $tenant,
-                'tenant_existe' => !!$tenantModel,
-                'dominio_en_db_existe' => !!$domainModel,
-                'buscando_en_domains_por' => $tenant
-            ]);
-        });
-
-        Route::get('/dashboard', fn() => inertia('tenant/dashboard'))->name('tenant.dashboard');
+Route::prefix('{tenant}')
+->middleware([
+    'web',
+    InitializeTenancyByPath::class,
+])
+->group(function () {
+        Route::get('/login', [AuthController::class, 'showLogin'])->name('tenant.login');
+        Route::post('/login', [AuthController::class, 'login']);
+        Route::get('/register', [\App\Http\Controllers\Tenant\RegisterController::class, 'show'])->name('tenant.register');
+        Route::post('/register', [\App\Http\Controllers\Tenant\RegisterController::class, 'store']);
+        
+        Route::middleware(['tenant.auth', 'tenant.active', 'tenant.provisions'])->group(function () {
+        Route::get('/dashboard', DashboardController::class)->name('tenant.dashboard');
         
         // Companies
         Route::resource('companies', CompanyController::class)->names('tenant.companies');
@@ -104,4 +92,5 @@ Route::group([
             Route::post('/validate', [SyncController::class, 'validateBatch'])->name('validate');
             Route::post('/invoices', [SyncController::class, 'syncInvoices'])->name('invoices');
         });
+    });
     });

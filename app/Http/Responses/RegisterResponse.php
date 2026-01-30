@@ -8,8 +8,16 @@ class RegisterResponse implements RegisterResponseContract
 {
     public function toResponse($request)
     {
-        $slug = $request->input('slug');
-        
-        return redirect("/{$slug}/dashboard");
+        $tenant = \App\Models\Tenant::whereHas('users', function($q) use ($request) {
+            $q->where('users.id', $request->user()->id);
+        })->first();
+
+        $redirectUrl = $tenant 
+            ? "/{$tenant->slug}/dashboard" 
+            : "/dashboard";
+
+        return $request->wantsJson()
+            ? response()->json(['redirect' => $redirectUrl])
+            : redirect($redirectUrl);
     }
 }
