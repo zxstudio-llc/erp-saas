@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 // use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use App\Http\Controllers\Billing\InvoiceController;
+use App\Http\Controllers\Tenant\Signup\RegisterController;
 use App\Http\Controllers\Sync\SyncController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
@@ -31,14 +32,13 @@ use App\Http\Middleware\EnsureTenantIsActive;
 Route::prefix('{tenant}')
 ->middleware([
     'web',
-    'tenant',
     InitializeTenancyByPath::class,
 ])
 ->group(function () {
         Route::get('/login', [AuthController::class, 'showLogin'])->name('tenant.login');
         Route::post('/login', [AuthController::class, 'login']);
-        Route::get('/register', [\App\Http\Controllers\Tenant\RegisterController::class, 'show'])->name('tenant.register');
-        Route::post('/register', [\App\Http\Controllers\Tenant\RegisterController::class, 'store']);
+        Route::get('/sign-up', [RegisterController::class, 'show'])->name('tenant.sign-up.show');
+        Route::post('/sign-up', [RegisterController::class, 'store'])->name('tenant.sign-up.store');
 
         Route::middleware(['tenant.auth', 'tenant.active', 'tenant.provisions'])->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('tenant.dashboard');

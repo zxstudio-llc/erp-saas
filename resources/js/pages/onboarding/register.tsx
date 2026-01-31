@@ -1,5 +1,4 @@
 import { Head, useForm } from '@inertiajs/react';
-import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,8 +22,6 @@ export default function OnboardingRegister({ plan, plans = [] }: { plan?: Plan, 
         company_name: '',
         slug: '',
         plan_id: plan?.id.toString() || '',
-        organization_size: '',
-        phone: '',
     });
 
     const handleCompanyNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,10 +40,7 @@ export default function OnboardingRegister({ plan, plans = [] }: { plan?: Plan, 
     };
 
     return (
-        <AuthLayout
-            title="Crea tu empresa"
-            description="Completa los datos para configurar tu cuenta"
-        >
+        <AuthLayout title="Crea tu empresa" description="Completa los datos para configurar tu cuenta">
             <Head title="Registro de Empresa" />
             
             <form onSubmit={submit} className="space-y-6">
@@ -100,16 +94,6 @@ export default function OnboardingRegister({ plan, plans = [] }: { plan?: Plan, 
                             <Input value={data.slug} readOnly className="bg-muted" />
                         </div>
                         <InputError message={errors.slug} />
-                    </Field>
-
-                    <Field>
-                        <FieldLabel>Tamaño de la organización</FieldLabel>
-                        <Input value={data.organization_size} onChange={e => setData('organization_size', e.target.value)} />
-                    </Field>
-
-                    <Field>
-                        <FieldLabel>Teléfono</FieldLabel>
-                        <Input value={data.phone} onChange={e => setData('phone', e.target.value)} />
                     </Field>
 
                     <Button type="submit" disabled={processing} className="w-full">

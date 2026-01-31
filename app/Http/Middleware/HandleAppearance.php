@@ -11,13 +11,13 @@ class HandleAppearance
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // ❗ NO ejecutar en requests Inertia
-        if (! $request->headers->has('X-Inertia')) {
-            View::share(
-                'appearance',
-                $request->cookie('appearance', 'system')
-            );
+        $appearance = 'system';
+
+        if ($request->cookies && is_string($request->cookies->get('appearance'))) {
+            $appearance = $request->cookies->get('appearance');
         }
+
+        View::share('appearance', $appearance);
 
         return $next($request);
     }

@@ -15,9 +15,9 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 {
     use HasDatabase, HasDomains, HasUuids;
 
-    protected $primaryKey = 'id';
-    protected $keyType = 'string';
-    public $incrementing = false;
+    // protected $primaryKey = 'id';
+    // protected $keyType = 'string';
+    // public $incrementing = false;
 
     protected $fillable = [
         'id',
@@ -52,10 +52,10 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return $this->hasMany(Subscription::class);
     }
 
-    public function users(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'tenant_users');
-    }
+    // public function users(): BelongsToMany
+    // {
+    //     return $this->belongsToMany(User::class, 'tenant_users');
+    // }
 
     public function isActive(): bool
     {

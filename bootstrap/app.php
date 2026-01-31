@@ -24,7 +24,6 @@ return Application::configure(basePath: dirname(__DIR__))
             // HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            // \App\Http\Middleware\AuthenticateViaToken::class,
         ]);
 
         $middleware->alias([
@@ -35,7 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->priority([
-            \Stancl\Tenancy\Middleware\InitializeTenancyByPath::class, // Primero identificamos
+            \Stancl\Tenancy\Middleware\InitializeTenancyByPath::class,
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,

@@ -13,8 +13,6 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, TwoFactorAuthenticatable;
 
-    protected $connection = 'central';
-
     protected $fillable = [
         'name',
         'email',
@@ -28,26 +26,29 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'two_factor_confirmed_at' => 'datetime',
-    ];
-
-    public function getAuthIdentifierName(): string
+    protected function casts(): array
     {
-        return 'id';
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'two_factor_confirmed_at' => 'datetime',
+        ];
     }
 
-    protected static function booted()
-    {
-        static::retrieved(function ($model) {
-            $model->syncOriginal();
-        });
-    }
+    // public function getAuthIdentifierName(): string
+    // {
+    //     return 'id';
+    // }
 
-    public function tenants(): BelongsToMany
-    {
-        return $this->belongsToMany(Tenant::class, 'tenant_users');
-    }
+    // protected static function booted()
+    // {
+    //     static::retrieved(function ($model) {
+    //         $model->syncOriginal();
+    //     });
+    // }
+
+    // public function tenants(): BelongsToMany
+    // {
+    //     return $this->belongsToMany(Tenant::class, 'tenant_users');
+    // }
 }
