@@ -15,15 +15,13 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 {
     use HasDatabase, HasDomains, HasUuids;
 
-    // protected $primaryKey = 'id';
-    // protected $keyType = 'string';
-    // public $incrementing = false;
-
     protected $fillable = [
         'id',
         'slug',
         'database',
         'status',
+        'company_name',
+        'dni',
         'data',
     ];
 
@@ -34,10 +32,13 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'slug',
             'database',
             'status',
+            'company_name',
+            'dni',
         ];
     }
 
     protected $casts = [
+        'data' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -52,11 +53,6 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return $this->hasMany(Subscription::class);
     }
 
-    // public function users(): BelongsToMany
-    // {
-    //     return $this->belongsToMany(User::class, 'tenant_users');
-    // }
-
     public function isActive(): bool
     {
         return $this->status === 'active';
@@ -70,5 +66,10 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function activate(): void
     {
         $this->update(['status' => 'active']);
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
     }
 }

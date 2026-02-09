@@ -7,13 +7,20 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\AuthDiscoveryController;
 
 Route::get('/', WelcomeController::class)->name('home');
 
 Route::prefix('onboarding')->name('onboarding.')->group(function () {
     Route::get('/plans', [OnboardingController::class, 'selectPlan'])->name('plans');
     Route::get('/register', [OnboardingController::class, 'register'])->name('register');
-    Route::post('/provision', [OnboardingController::class, 'provision'])->name('provision');
+    Route::post('/signup', [OnboardingController::class, 'provision'])->name('signup');
+    Route::get('/signup', [OnboardingController::class, 'provisionShow'])->name('signup.show');
+});
+
+Route::prefix('sign-in')->name('auth.')->group(function () {
+    Route::get('/', [AuthDiscoveryController::class, 'show'])->name('sign-in.show');
+    Route::post('/discover', [AuthDiscoveryController::class, 'discover'])->name('sign-in.discover');
 });
 
 Route::middleware(['auth', 'verified', 'no.tenant'])->group(function () {

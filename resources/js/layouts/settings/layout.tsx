@@ -5,39 +5,64 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
-import { edit as editAppearance } from '@/routes/appearance';
-import { edit } from '@/routes/profile';
-import { show } from '@/routes/two-factor';
+import type { NavItem, Tenant } from '@/types';
+import { edit as editProfile } from '@/routes/profile';
 import { edit as editPassword } from '@/routes/user-password';
-import type { NavItem } from '@/types';
+import { show as showTwoFactor } from '@/routes/two-factor';
+import { edit as editAppearance } from '@/routes/appearance';
+import tenant from '@/hooks/use-tenant';
+import profile from '@/routes/tenant/settings/profile';
+import userPassword from '@/routes/tenant/settings/user-password';
+import twoFactor from '@/routes/tenant/settings/two-factor';
+import appearance from '@/routes/tenant/settings/appearance';
 
-const sidebarNavItems: NavItem[] = [
-    {
-        title: 'Profile',
-        href: edit(),
-        icon: null,
-    },
-    {
-        title: 'Password',
-        href: editPassword(),
-        icon: null,
-    },
-    {
-        title: 'Two-Factor Auth',
-        href: show(),
-        icon: null,
-    },
-    {
-        title: 'Appearance',
-        href: editAppearance(),
-        icon: null,
-    },
-];
+function useSettingsRoutes() {
+    const currentTenant = tenant.required();
+
+    if (currentTenant) {
+        return {
+            profile: profile.edit(currentTenant.slug).url,
+            password: userPassword.edit(currentTenant.slug).url,
+            twoFactor: twoFactor.show(currentTenant.slug).url,
+            appearance: appearance.edit(currentTenant.slug).url,
+        };
+    }
+
+    return {
+        profile: editProfile().url,
+        password: editPassword().url,
+        twoFactor: showTwoFactor().url,
+        appearance: editAppearance().url,
+    };
+}
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentUrl } = useCurrentUrl();
+    const routes = useSettingsRoutes();
 
-    // When server-side rendering, we only render the layout on the client...
+    const sidebarNavItems: NavItem[] = [
+        {
+            title: 'Profile',
+            href: routes.profile,
+            icon: null,
+        },
+        {
+            title: 'Password',
+            href: routes.password,
+            icon: null,
+        },
+        {
+            title: 'Two-Factor Auth',
+            href: routes.twoFactor,
+            icon: null,
+        },
+        {
+            title: 'Appearance',
+            href: routes.appearance,
+            icon: null,
+        },
+    ];
+
     if (typeof window === 'undefined') {
         return null;
     }
@@ -52,7 +77,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
             <div className="flex flex-col lg:flex-row lg:space-x-12">
                 <aside className="w-full max-w-xl lg:w-48">
                     <nav
-                        className="flex flex-col space-y-1 space-x-0"
+                        className="flex flex-col space-y-1"
                         aria-label="Settings"
                     >
                         {sidebarNavItems.map((item, index) => (
@@ -66,9 +91,6 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 })}
                             >
                                 <Link href={item.href}>
-                                    {item.icon && (
-                                        <item.icon className="h-4 w-4" />
-                                    )}
                                     {item.title}
                                 </Link>
                             </Button>

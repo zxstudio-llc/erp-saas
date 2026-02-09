@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Models\Establishment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -10,108 +11,63 @@ use Illuminate\Http\RedirectResponse;
 
 class CompanyController extends Controller
 {
+    
     public function index(): Response
     {
-        $companies = Company::withCount(['establishments', 'invoices'])
-            ->latest()
-            ->paginate(15);
+        $company = Company::with([
+            'establishments.emissionPoints',
+            'invoices' => fn($q) => $q->latest()->take(5)
+        ])
+        ->withCount(['establishments', 'invoices'])
+        ->where('is_main', true)
+        ->firstOrFail();
 
         return Inertia::render('companies/index', [
-            'companies' => $companies
-        ]);
-    }
-
-    public function create(): Response
-    {
-        return Inertia::render('companies/create');
-    }
-
-    public function store(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'ruc' => 'required|string|size:13|unique:companies,ruc',
-            'business_name' => 'required|string|max:255',
-            'trade_name' => 'nullable|string|max:255',
-            'environment' => 'required|in:test,prod',
-            'address' => 'nullable|string|max:500',
-            'special_taxpayer' => 'boolean',
-            'accounting_required' => 'boolean',
-        ]);
-
-        $company = Company::create($validated);
-
-        return redirect()
-            ->route('companies.show', $company)
-            ->with('success', 'Empresa creada exitosamente.');
-    }
-
-    public function show(Company $company): Response
-    {
-        $company->load([
-            'establishments.emissionPoints',
-            'invoices' => fn($q) => $q->latest()->take(10)
-        ]);
-
-        return Inertia::render('companies/show', [
             'company' => $company,
             'stats' => [
-                'total_invoices' => $company->invoices()->count(),
-                'invoices_month' => $company->invoices()
-                    ->whereMonth('created_at', now()->month)
-                    ->count(),
-                'total_authorized' => $company->invoices()
-                    ->where('status', 'authorized')
-                    ->count(),
+                'total_invoices'    => $company->invoices_count,
+                'invoices_month'    => $company->invoices()->whereMonth('created_at', now()->month)->count(),
+                'active_locations'  => $company->establishments_count,
+            ],
+            'next_codes' => [
+                'establishment' => Establishment::nextCodeForCompany($company->id),
+                'emission_point' => '001',
             ]
-        ]);
-    }
-
-    public function edit(Company $company): Response
-    {
-        return Inertia::render('companies/edit', [
-            'company' => $company
         ]);
     }
 
     public function update(Request $request, Company $company): RedirectResponse
     {
-        $validated = $request->validate([
-            'ruc' => 'required|string|size:13|unique:companies,ruc,' . $company->id,
-            'business_name' => 'required|string|max:255',
+        $rules = [
+            'email' => 'required|email',
             'trade_name' => 'nullable|string|max:255',
             'environment' => 'required|in:test,prod',
             'address' => 'nullable|string|max:500',
             'special_taxpayer' => 'boolean',
             'accounting_required' => 'boolean',
-        ]);
+        ];
+        
+        if (!$company->is_main) {
+            $rules['ruc'] = 'required|string|size:13|unique:companies,ruc,' . $company->id;
+            $rules['business_name'] = 'required|string|max:255';
+        }
+
+        $validated = $request->validate($rules);
+
+        if ($company->is_main) {
+            unset($validated['ruc'], $validated['business_name']);
+        }
 
         $company->update($validated);
 
-        return redirect()
-            ->route('companies.show', $company)
-            ->with('success', 'Empresa actualizada exitosamente.');
-    }
-
-    public function destroy(Company $company): RedirectResponse
-    {
-        // Verificar que no tenga facturas
-        if ($company->invoices()->exists()) {
-            return back()->with('error', 'No se puede eliminar una empresa con facturas.');
-        }
-
-        $company->delete();
-
-        return redirect()
-            ->route('companies.index')
-            ->with('success', 'Empresa eliminada exitosamente.');
+        return back()->with('success', 'Información actualizada correctamente.');
     }
 
     public function switchEnvironment(Company $company): RedirectResponse
     {
         $newEnv = $company->environment === 'test' ? 'prod' : 'test';
-        
         $company->update(['environment' => $newEnv]);
 
-        return back()->with('success', 'Ambiente cambiado a ' . strtoupper($newEnv));
+        return back()->with('success', 'Ambiente de facturación cambiado a ' . strtoupper($newEnv));
     }
 }

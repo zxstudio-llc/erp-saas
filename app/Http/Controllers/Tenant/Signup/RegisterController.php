@@ -20,33 +20,18 @@ class RegisterController extends Controller
     }
 
     public function store(Request $request)
-{
-    $tenant = tenant();
-    abort_if(!$tenant, 404);
-
-    try {
+    {
         $validated = $request->validate([
             'email' => 'required|email',
             'password' => 'required|string|min:8|confirmed',
         ]);
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        // Retorna errores a Inertia
-        return back()->withErrors($e->errors())->withInput();
+    
+        $user = \App\Models\User::where('email', $validated['email'])->firstOrFail();
+        $user->update(['password' => Hash::make($validated['password'])]);
+    
+        Auth::login($user);
+    
+        return redirect()->route('tenant.dashboard', ['tenant' => tenant('slug')]);
     }
-
-    tenancy()->initialize($tenant);
-
-    $user = \App\Models\User::where('email', $validated['email'])->firstOrFail();
-
-    $user->update([
-        'password' => Hash::make($validated['password']),
-    ]);
-
-    Auth::login($user);
-
-    return redirect()->route('tenant.dashboard', [
-        'tenant' => tenant('slug'),
-    ]);
-}
 
 }

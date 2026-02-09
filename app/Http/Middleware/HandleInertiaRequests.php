@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Stancl\Tenancy\Contracts\Tenant;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -17,7 +18,6 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        $tenant = tenant(); // 👈 ESTA ES LA CLAVE
 
         return [
             ...parent::share($request),
@@ -26,12 +26,7 @@ class HandleInertiaRequests extends Middleware
 
             'appearance' => $request->cookie('appearance', 'system'),
 
-            'tenant' => $tenant
-                ? [
-                    'id' => $tenant->id,
-                    'slug' => $tenant->slug,
-                ]
-                : null,
+            'tenant' => tenant(),
 
             'auth' => [
                 'user' => Auth::check()

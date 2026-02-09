@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { LogOut, Settings } from 'lucide-react';
 import {
     DropdownMenuGroup,
@@ -9,8 +9,10 @@ import {
 import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
-import { edit } from '@/routes/profile';
+import { edit as editProfile } from '@/routes/profile';
 import type { User } from '@/types';
+import tenant from '@/hooks/use-tenant';
+import profile from '@/routes/tenant/settings/profile';
 
 type Props = {
     user: User;
@@ -18,6 +20,12 @@ type Props = {
 
 export function UserMenuContent({ user }: Props) {
     const cleanup = useMobileNavigation();
+
+    const currentTenant = tenant.optional();
+
+    const profileUrl = currentTenant
+        ? profile.edit(currentTenant.slug).url
+        : editProfile().url;
 
     const handleLogout = () => {
         cleanup();
@@ -36,7 +44,7 @@ export function UserMenuContent({ user }: Props) {
                 <DropdownMenuItem asChild>
                     <Link
                         className="block w-full cursor-pointer"
-                        href={edit()}
+                        href={profileUrl}
                         prefetch
                         onClick={cleanup}
                     >

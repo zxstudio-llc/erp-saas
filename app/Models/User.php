@@ -17,6 +17,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'must_change_password',
     ];
 
     protected $hidden = [
@@ -34,21 +35,4 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
         ];
     }
-
-    // public function getAuthIdentifierName(): string
-    // {
-    //     return 'id';
-    // }
-
-    // protected static function booted()
-    // {
-    //     static::retrieved(function ($model) {
-    //         $model->syncOriginal();
-    //     });
-    // }
-
-    // public function tenants(): BelongsToMany
-    // {
-    //     return $this->belongsToMany(Tenant::class, 'tenant_users');
-    // }
 }

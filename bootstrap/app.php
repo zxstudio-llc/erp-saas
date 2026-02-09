@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.active' => EnsureTenantIsActive::class,
             'tenant.provisions' => CheckTenantProvisions::class,
             'no.tenant' => \App\Http\Middleware\RedirectIfTenantContext::class,
+            'force.password.change' => \App\Http\Middleware\ForcePasswordChange::class,
         ]);
 
         $middleware->priority([

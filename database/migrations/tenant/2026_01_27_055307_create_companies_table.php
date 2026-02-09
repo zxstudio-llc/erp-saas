@@ -15,11 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('ruc', 13)->unique();
             $table->string('business_name');
+            $table->string('email')->unique()->nullable();
             $table->string('trade_name')->nullable();
             $table->enum('environment', ['test', 'prod'])->default('test');
             $table->string('address')->nullable();
             $table->boolean('special_taxpayer')->default(false);
             $table->boolean('accounting_required')->default(false);
+            $table->boolean('is_main')->default(false);
             $table->softDeletes(); 
             $table->timestamps();
         });

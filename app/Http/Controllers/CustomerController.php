@@ -14,6 +14,10 @@ class CustomerController extends Controller
     {
         $query = Customer::query();
 
+        if ($request->boolean('trashed')) {
+            $query->onlyTrashed();
+        }
+
         if ($search = $request->input('search')) {
             $query->where(function($q) use ($search) {
                 $q->where('identification', 'like', "%{$search}%")
@@ -33,13 +37,8 @@ class CustomerController extends Controller
 
         return Inertia::render('customers/index', [
             'customers' => $customers,
-            'filters' => $request->only(['search', 'active'])
+            'filters' => $request->only(['search', 'active', 'trashed'])
         ]);
-    }
-
-    public function create(): Response
-    {
-        return Inertia::render('customers/create');
     }
 
     public function store(Request $request): RedirectResponse
@@ -52,7 +51,7 @@ class CustomerController extends Controller
                 'unique:customers,identification',
                 function ($attribute, $value, $fail) use ($request) {
                     if ($request->identification_type === 'RUC' && strlen($value) !== 13) {
-                        $fail('El RUC debe tener 13 dígitos.');
+                        $fail('El RUC para entrega inmediata debe tener 13 dígitos.');
                     }
                     if ($request->identification_type === 'CI' && strlen($value) !== 10) {
                         $fail('La cédula debe tener 10 dígitos.');
@@ -66,36 +65,9 @@ class CustomerController extends Controller
             'active' => 'boolean',
         ]);
 
-        $customer = Customer::create($validated);
+        Customer::create($validated);
 
-        return redirect()
-            ->route('customers.show', $customer)
-            ->with('success', 'Cliente creado exitosamente.');
-    }
-
-    public function show(Customer $customer): Response
-    {
-        $customer->load(['invoices' => fn($q) => $q->latest()->take(20)]);
-
-        return Inertia::render('customers/show', [
-            'customer' => $customer,
-            'stats' => [
-                'total_invoices' => $customer->invoices()->count(),
-                'total_amount' => $customer->invoices()
-                    ->where('status', 'authorized')
-                    ->sum('total'),
-                'pending_invoices' => $customer->invoices()
-                    ->whereIn('status', ['offline_pending', 'sent'])
-                    ->count(),
-            ]
-        ]);
-    }
-
-    public function edit(Customer $customer): Response
-    {
-        return Inertia::render('customers/edit', [
-            'customer' => $customer
-        ]);
+        return back()->with('success', 'Cliente registrado exitosamente.');
     }
 
     public function update(Request $request, Customer $customer): RedirectResponse
@@ -124,9 +96,7 @@ class CustomerController extends Controller
 
         $customer->update($validated);
 
-        return redirect()
-            ->route('customers.show', $customer)
-            ->with('success', 'Cliente actualizado exitosamente.');
+        return back()->with('success', 'Cliente actualizado exitosamente.');
     }
 
     public function destroy(Customer $customer): RedirectResponse
@@ -137,9 +107,7 @@ class CustomerController extends Controller
 
         $customer->delete();
 
-        return redirect()
-            ->route('customers.index')
-            ->with('success', 'Cliente eliminado exitosamente.');
+        return back()->with('success', 'Cliente eliminado exitosamente.');
     }
 
     public function search(Request $request)
@@ -165,5 +133,13 @@ class CustomerController extends Controller
         $status = $customer->active ? 'activado' : 'desactivado';
         
         return back()->with('success', "Cliente {$status} exitosamente.");
+    }
+
+    public function restore(int $id): RedirectResponse
+    {
+        $customer = Customer::onlyTrashed()->findOrFail($id);
+        $customer->restore();
+
+        return back()->with('success', 'Cliente restaurado exitosamente.');
     }
 }

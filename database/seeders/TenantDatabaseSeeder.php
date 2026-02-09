@@ -35,46 +35,12 @@ class TenantDatabaseSeeder extends Seeder
         $facturador->givePermissionTo(['invoices.create', 'invoices.view', 'sri.send']);
         $contabilidad->givePermissionTo(['invoices.view', 'accounting.view']);
 
-        // Compañía de ejemplo
-        $company = Company::create([
-            'ruc' => '1234567890001',
-            'business_name' => 'Empresa Demo S.A.',
-            'trade_name' => 'Demo',
-            'environment' => 'test',
-            'address' => 'Quito, Ecuador',
-        ]);
-
-        // Establecimiento
-        $establishment = Establishment::create([
-            'company_id' => $company->id,
-            'code' => '001',
-            'name' => 'Matriz',
-            'address' => 'Quito',
-        ]);
-
-        // Punto de emisión
-        $emissionPoint = EmissionPoint::create([
-            'establishment_id' => $establishment->id,
-            'code' => '001',
-            'name' => 'Caja 1',
-        ]);
-
-        // Bloque inicial de secuenciales
-        InvoiceSequenceBlock::create([
-            'establishment_id' => $establishment->id,
-            'emission_point_id' => $emissionPoint->id,
-            'from_number' => 1,
-            'to_number' => 1000,
-            'current_number' => 0,
-            'status' => 'available',
-        ]);
-
         // Cliente de ejemplo
         Customer::create([
             'identification_type' => 'RUC',
-            'identification' => '9999999999001',
+            'identification' => '9999999999999',
             'business_name' => 'Consumidor Final',
-            'email' => 'consumidor@example.com',
+            'email' => 'consumidor@anahisoft.com',
         ]);
     }
 }

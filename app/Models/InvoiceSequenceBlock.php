@@ -8,10 +8,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InvoiceSequenceBlock extends Model
 {
+    const STATUS_AVAILABLE = 'available';
+    const STATUS_EXHAUSTED = 'exhausted';
+    
     protected $fillable = [
-        'establishment_id', 'emission_point_id', 'from_number',
-        'to_number', 'current_number', 'status', 'device_id', 'assigned_at'
+        'establishment_id',
+        'emission_point_id',
+        'from_number',
+        'to_number',
+        'current_number',
+        'status',
+        'device_id',
+        'assigned_at'
     ];
+    
     protected $casts = ['assigned_at' => 'datetime'];
 
     public function establishment(): BelongsTo

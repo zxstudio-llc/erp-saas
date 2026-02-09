@@ -9,12 +9,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Company extends Model
 {
     protected $fillable = [
-        'ruc', 'business_name', 'trade_name', 'environment',
-        'address', 'special_taxpayer', 'accounting_required'
+        'ruc',
+        'business_name',
+        'email',
+        'trade_name',
+        'environment',
+        'address',
+        'special_taxpayer',
+        'accounting_required',
+        'is_main'
     ];
     protected $casts = [
         'special_taxpayer' => 'boolean',
-        'accounting_required' => 'boolean'
+        'accounting_required' => 'boolean',
+        'is_main' => 'boolean'
     ];
 
     public function establishments(): HasMany

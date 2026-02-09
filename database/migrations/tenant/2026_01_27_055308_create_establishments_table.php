@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('code', 3);
             $table->string('name');
             $table->string('address')->nullable();
+            $table->string('latitude')->nullable();
+            $table->string('longitude')->nullable();
             $table->boolean('active')->default(true);
             $table->softDeletes(); 
             $table->timestamps();

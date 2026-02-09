@@ -3,91 +3,94 @@
 namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
-use App\Models\Establishment;
-use App\Models\Company;
+use App\Models\{Establishment, InvoiceSequenceBlock, Company};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 
 class EstablishmentController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $establishments = Establishment::with(['company', 'emissionPoints'])
-            ->withCount('sequenceBlocks')
+        
+        $company = Company::first();
+        $companyId = $company->id;
+
+        $establishments = Establishment::with([
+                'company:id,business_name,ruc,environment',
+                'emissionPoints',
+                'sequenceBlocks'
+            ])
+            ->withCount(['emissionPoints', 'sequenceBlocks'])
             ->latest()
             ->paginate(20);
 
-        return Inertia::render('establishments/index', [
-            'establishments' => $establishments
-        ]);
-    }
+        $nextEmissionPoint = '001'; 
 
-    public function create(): Response
-    {
-        return Inertia::render('establishments/create', [
-            'companies' => Company::where('active', true)->get(['id', 'business_name'])
+        return Inertia::render('establishments/index', [
+            'establishments' => $establishments,
+            'next_codes' => [
+                'establishment' => Establishment::nextCodeForCompany($companyId),
+                'emission_point' => $nextEmissionPoint,
+            ]
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'company_id' => 'required|exists:companies,id',
-            'code' => [
-                'required',
-                'string',
-                'size:3',
-                'regex:/^[0-9]{3}$/',
-                function ($attribute, $value, $fail) use ($request) {
-                    $exists = Establishment::where('company_id', $request->company_id)
-                        ->where('code', $value)
-                        ->exists();
-                    if ($exists) {
-                        $fail('Este código de establecimiento ya existe para esta empresa.');
-                    }
-                }
-            ],
-            'name' => 'required|string|max:255',
-            'address' => 'nullable|string|max:500',
-            'active' => 'boolean',
+            'company_id'           => 'required|exists:companies,id',
+            'name'                 => 'required|string|max:255',
+            'address'              => 'required|string|max:500',
+            'latitude'             => 'string|max:500',
+            'longitude'            => 'string|max:500',
+            'create_default_point' => 'boolean',
+            'point_code'           => 'required_if:create_default_point,true|string|size:3',
         ]);
 
-        $establishment = Establishment::create($validated);
+        try {
+            DB::beginTransaction();
 
-        return redirect()
-            ->route('establishments.show', $establishment)
-            ->with('success', 'Establecimiento creado exitosamente.');
-    }
+            $nextCode = Establishment::nextCodeForCompany($validated['company_id']);
 
-    public function show(Establishment $establishment): Response
-    {
-        $establishment->load([
-            'company',
-            'emissionPoints',
-            'sequenceBlocks' => fn($q) => $q->latest()
-        ]);
+            $establishment = Establishment::create([
+                'company_id' => $validated['company_id'],
+                'code'       => $nextCode,
+                'name'       => $validated['name'],
+                'address'    => $validated['address'],
+                'latitude'   => $validated['latitude'],
+                'longitude'  => $validated['longitude'],
+                'active'     => true,
+            ]);
 
-        return Inertia::render('establishments/show', [
-            'establishment' => $establishment,
-            'stats' => [
-                'emission_points' => $establishment->emissionPoints()->count(),
-                'active_blocks' => $establishment->sequenceBlocks()
-                    ->where('status', 'available')
-                    ->count(),
-                'total_sequences' => $establishment->sequenceBlocks()
-                    ->sum(\DB::raw('to_number - from_number + 1')),
-            ]
-        ]);
-    }
+            if ($request->create_default_point) {
+                $pointCode = $request->point_code ?? '001';
+                
+                $emissionPoint = $establishment->emissionPoints()->create([
+                    'code'   => $pointCode,
+                    'name'   => 'Punto de Venta ' . $pointCode,
+                    'active' => true,
+                ]);
 
-    public function edit(Establishment $establishment): Response
-    {
-        return Inertia::render('establishments/edit', [
-            'establishment' => $establishment->load('company'),
-            'companies' => Company::all(['id', 'business_name'])
-        ]);
+                $establishment->sequenceBlocks()->create([
+                    'emission_point_id' => $emissionPoint->id,
+                    'from_number'       => 1,
+                    'to_number'         => 1000,
+                    'current_number'    => 0,
+                    'status'            => InvoiceSequenceBlock::STATUS_AVAILABLE,
+                    'assigned_at'       => now(),
+                ]);
+            }
+
+            DB::commit();
+            return back()->with('success', "Sucursal {$nextCode} registrada correctamente.");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error: ' . $e->getMessage());
+        }
     }
 
     public function update(Request $request, Establishment $establishment): RedirectResponse
@@ -111,14 +114,14 @@ class EstablishmentController extends Controller
             ],
             'name' => 'required|string|max:255',
             'address' => 'nullable|string|max:500',
+            'latitude' => 'string|max:500',
+            'longitude' => 'string|max:500',
             'active' => 'boolean',
         ]);
 
         $establishment->update($validated);
 
-        return redirect()
-            ->route('establishments.show', $establishment)
-            ->with('success', 'Establecimiento actualizado exitosamente.');
+        return back()->with('success', 'Establecimiento actualizado exitosamente.');
     }
 
     public function destroy(Establishment $establishment): RedirectResponse
@@ -140,8 +143,11 @@ class EstablishmentController extends Controller
 
     public function toggle(Establishment $establishment): RedirectResponse
     {
-        $establishment->update(['active' => !$establishment->active]);
+        if ($establishment->is_main) {
+            return back()->with('error', 'No se puede desactivar el establecimiento matriz.');
+        }
 
+        $establishment->update(['active' => !$establishment->active]);
         $status = $establishment->active ? 'activado' : 'desactivado';
         
         return back()->with('success', "Establecimiento {$status} exitosamente.");

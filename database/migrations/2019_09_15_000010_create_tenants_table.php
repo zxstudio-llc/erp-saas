@@ -18,6 +18,8 @@ class CreateTenantsTable extends Migration
         Schema::create('tenants', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->string('slug')->unique();
+            $table->string('dni')->unique();
+            $table->string('company_name');
             $table->string('database');
             $table->enum('status', ['active', 'suspended'])->default('active');
             $table->softDeletes(); 

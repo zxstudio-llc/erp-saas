@@ -20,17 +20,15 @@ class EmissionPointController extends Controller
             ->latest()
             ->paginate(20);
 
-        return Inertia::render('emission-points/index', [
-            'emissionPoints' => $emissionPoints
-        ]);
-    }
-
-    public function create(): Response
-    {
-        return Inertia::render('emission-points/create', [
-            'establishments' => Establishment::with('company')
-                ->where('active', true)
-                ->get()
+        $establishments = Establishment::where('active', true)
+            ->with(['emissionPoints' => function($query) {
+                $query->select('id', 'establishment_id', 'code');
+            }])
+            ->get(['id', 'name', 'code']);
+    
+        return Inertia::render('emissionPoints/index', [
+            'emissionPoints' => $emissionPoints,
+            'establishments' => $establishments,
         ]);
     }
 
@@ -58,42 +56,7 @@ class EmissionPointController extends Controller
 
         $emissionPoint = EmissionPoint::create($validated);
 
-        return redirect()
-            ->route('emission-points.show', $emissionPoint)
-            ->with('success', 'Punto de emisión creado exitosamente.');
-    }
-
-    public function show(EmissionPoint $emissionPoint): Response
-    {
-        $emissionPoint->load([
-            'establishment.company',
-            'sequenceBlocks' => fn($q) => $q->latest()->take(20)
-        ]);
-
-        return Inertia::render('emission-points/show', [
-            'emissionPoint' => $emissionPoint,
-            'stats' => [
-                'total_blocks' => $emissionPoint->sequenceBlocks()->count(),
-                'available_blocks' => $emissionPoint->sequenceBlocks()
-                    ->where('status', 'available')
-                    ->count(),
-                'exhausted_blocks' => $emissionPoint->sequenceBlocks()
-                    ->where('status', 'exhausted')
-                    ->count(),
-                'total_capacity' => $emissionPoint->sequenceBlocks()
-                    ->sum(\DB::raw('to_number - from_number + 1')),
-                'used_numbers' => $emissionPoint->sequenceBlocks()
-                    ->sum(\DB::raw('current_number - from_number + 1')),
-            ]
-        ]);
-    }
-
-    public function edit(EmissionPoint $emissionPoint): Response
-    {
-        return Inertia::render('emission-points/edit', [
-            'emissionPoint' => $emissionPoint->load('establishment'),
-            'establishments' => Establishment::with('company')->get()
-        ]);
+        return back()->with('success', 'Punto de emisión creado exitosamente.');
     }
 
     public function update(Request $request, EmissionPoint $emissionPoint): RedirectResponse
@@ -121,9 +84,7 @@ class EmissionPointController extends Controller
 
         $emissionPoint->update($validated);
 
-        return redirect()
-            ->route('emission-points.show', $emissionPoint)
-            ->with('success', 'Punto de emisión actualizado exitosamente.');
+        return back()->with('success', 'Punto de emisión actualizado exitosamente.');
     }
 
     public function destroy(EmissionPoint $emissionPoint): RedirectResponse
@@ -134,9 +95,7 @@ class EmissionPointController extends Controller
 
         $emissionPoint->delete();
 
-        return redirect()
-            ->route('emission-points.index')
-            ->with('success', 'Punto de emisión eliminado exitosamente.');
+        return back()->with('success', 'Punto de emisión eliminado exitosamente.');
     }
 
     public function toggle(EmissionPoint $emissionPoint): RedirectResponse

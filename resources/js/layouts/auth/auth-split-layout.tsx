@@ -11,34 +11,49 @@ export default function AuthSplitLayout({
     const { name } = usePage<SharedData>().props;
 
     return (
-        <div className="relative grid h-dvh flex-col items-center justify-center px-8 sm:px-0 lg:max-w-none lg:grid-cols-2 lg:px-0">
-            <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
-                <div className="absolute inset-0 bg-zinc-900" />
-                <Link
-                    href={home()}
-                    className="relative z-20 flex items-center text-lg font-medium"
-                >
-                    <AppLogoIcon className="mr-2 size-8 fill-current text-white" />
-                    {name}
-                </Link>
-            </div>
-            <div className="w-full lg:p-8">
-                <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-                    <Link
-                        href={home()}
-                        className="relative z-20 flex items-center justify-center lg:hidden"
-                    >
-                        <AppLogoIcon className="h-10 fill-current text-black sm:h-12" />
-                    </Link>
-                    <div className="flex flex-col items-start gap-2 text-left sm:items-center sm:text-center">
-                        <h1 className="text-xl font-medium">{title}</h1>
-                        <p className="text-sm text-balance text-muted-foreground">
-                            {description}
-                        </p>
+        <div className="relative grid h-dvh px-8 sm:px-0 lg:grid-cols-5 lg:px-2">
+
+            <div className="w-full lg:col-span-3 lg:flex items-center justify-center p-8">
+                <div className="relative w-full max-w-3xl p-2 items-start">
+
+                    <div className="flex flex-col gap-6 text-foreground px-4">
+                        <Link
+                            href={home()}
+                            className="flex items-start text-lg font-medium"
+                        >
+                            <AppLogoIcon className="mr-2 size-8 fill-current" />
+                            {name}
+                        </Link>
                     </div>
-                    {children}
+                    <div className="flex flex-col text-foreground">
+                        {children}
+                    </div>
                 </div>
             </div>
+
+            {/* 🔹 DERECHA – 1/3 */}
+            <div className="relative hidden lg:col-span-2 lg:flex items-center justify-center">
+                <div className="relative w-full max-w-xl rounded-2xl border bg-background p-10 shadow-xl h-11/12">
+
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl bg-linear-to-br from-muted/40 to-transparent" />
+
+                    <div className="relative z-10 flex flex-col gap-6 text-foreground">
+                        <Link
+                            href={home()}
+                            className="flex items-center text-lg font-medium"
+                        >
+                            <AppLogoIcon className="mr-2 size-8 fill-current" />
+                            {name} demo
+                        </Link>
+
+                        <p className="text-sm text-muted-foreground">
+                            Accede a una demo del sistema y explora sus funcionalidades.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     );
 }
+

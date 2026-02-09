@@ -27,7 +27,7 @@ class AuthenticateTenant
 
         // Si por alguna razón no hay slug en la URL, enviamos al login central
         if (!$tenantSlug) {
-            return redirect()->route('login');
+            return redirect()->route('auth.sign-in.show');
         }
 
         return redirect()->route('tenant.login', ['tenant' => $tenantSlug]);

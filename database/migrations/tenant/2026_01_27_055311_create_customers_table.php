@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
-            $table->string('identification_type'); // RUC, CI, Pasaporte
+            $table->string('identification_type');
             $table->string('identification');
             $table->string('business_name');
             $table->string('email')->nullable();
